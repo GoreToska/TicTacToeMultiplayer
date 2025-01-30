@@ -17,7 +17,6 @@ public class MultiplayerSceneManager : NetworkBehaviour
     private bool IsNetworkSceneManagementEnabled => NetworkManager != null && NetworkManager.SceneManager != null &&
                                                     NetworkManager.NetworkConfig.EnableSceneManagement;
 
-    public event EventHandler<SceneLoadingEventArgs> OnStartLoading;
     public event EventHandler OnAllPlayersLoaded;
 
     private string sceneToLoad;

@@ -1,4 +1,5 @@
 using System;
+using Managers;
 using TMPro;
 using Unity.Services.Authentication;
 using Unity.Services.Lobbies.Models;
@@ -50,7 +51,7 @@ namespace LobbySystem
             LobbyManager.Instance.OnKickedFromLobby += OnLeftLobby;
         }
 
-        private void UpdateLobby(object sender, LobbyManager.LobbyEventArgs e)
+        private void UpdateLobby(object sender, EventHandlers.LobbyEventArgs e)
         {
             UpdateLobby();
         }
@@ -126,6 +127,7 @@ namespace LobbySystem
 
         public void Show()
         {
+            LobbyManager.Instance.StartLobbiesRefreshRoutine();
             root.SetActive(true);
             objectToShowWhenClosed.SetActive(false);
         }

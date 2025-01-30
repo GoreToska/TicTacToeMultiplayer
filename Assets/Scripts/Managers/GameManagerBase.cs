@@ -2,9 +2,7 @@ using System;
 using System.Collections;
 using GameRules;
 using Unity.Netcode;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public enum PlayerType
 {
@@ -22,24 +20,23 @@ public enum PlayerSide
 
 namespace Managers
 {
-    public class GameManagerBase : NetworkBehaviour
+    public partial class GameManagerBase : NetworkBehaviour
     {
         public static GameManagerBase Instance { get; private set; }
 
         [SerializeField] private int winScore = 2;
         [SerializeField] private float timeBetweenGames = 2;
-        private PlayerType[,] playerFiguresArray;
 
-        public event EventHandler<OnClickedOnGridPositionEventArgs> OnClickedOnGridPosition;
+        public event EventHandler<EventHandlers.OnClickedOnGridPositionEventArgs> OnClickedOnGridPosition;
         public event EventHandler OnGameStarted;
-        public event EventHandler<OnGameWinEventArgs> OnGameWin;
+        public event EventHandler<EventHandlers.OnGameWinEventArgs> OnGameWin;
         public event EventHandler OnGameTie;
         public event EventHandler OnCurrentPlayablePlayerTypeChanged;
         public event EventHandler OnRematch;
         public event EventHandler OnTeamChanged;
         public event EventHandler OnScoreChanged;
         public event EventHandler OnPlacedObject;
-        public event EventHandler<OnGameEnded> OnGameOver;
+        public event EventHandler<EventHandlers.OnGameEnded> OnGameOver;
 
         private NetworkVariable<int> leftPlayerScore = new NetworkVariable<int>();
         private NetworkVariable<int> rightPlayerScore = new NetworkVariable<int>();
@@ -47,36 +44,7 @@ namespace Managers
         private PlayerType winnerPlayerType;
         private PlayerSide winnerPlayerSide;
         private bool isEnded = false;
-
-        public class OnClickedOnGridPositionEventArgs : EventArgs
-        {
-            public Vector2Int Position;
-            public PlayerType PlayerType;
-        }
-
-        public class OnGameWinEventArgs : EventArgs, INetworkSerializable
-        {
-            public WinConditions.Line Line;
-            public PlayerType WinPlayerType;
-
-            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-            {
-                serializer.SerializeNetworkSerializable(ref Line);
-                serializer.SerializeValue(ref WinPlayerType);
-            }
-        }
-
-        public class OnGameEnded : EventArgs, INetworkSerializable
-        {
-            public PlayerType WinPlayerType;
-            public PlayerSide WinPlayerSide;
-
-            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
-            {
-                serializer.SerializeValue(ref WinPlayerType);
-                serializer.SerializeValue(ref WinPlayerSide);
-            }
-        }
+        private PlayerType[,] playerFiguresArray;
 
         private PlayerType localPlayerType;
         private PlayerSide localPlayerSide;
@@ -156,13 +124,12 @@ namespace Managers
         private void TriggerGameOverRPC(PlayerSide playerSide)
         {
             OnGameOver?.Invoke(this,
-                new OnGameEnded { WinPlayerSide = playerSide });
+                new EventHandlers.OnGameEnded { WinPlayerSide = playerSide });
         }
 
         [Rpc(SendTo.ClientsAndHost)]
         private void TriggerOnGameStartedRPC()
         {
-            Debug.Log("StartGame");
             OnGameStarted?.Invoke(this, EventArgs.Empty);
         }
 
@@ -175,25 +142,23 @@ namespace Managers
             if (playerType != currentPlayablePlayerType.Value)
             {
                 // TODO: VFX and SFX maybe?
-                Debug.Log("Not your turn");
                 return;
             }
 
             if (playerFiguresArray[position.x, position.y] != PlayerType.None)
             {
                 // TODO: VFX and SFX maybe?
-                Debug.Log("Already occupied!");
                 return;
             }
 
             playerFiguresArray[position.x, position.y] = playerType;
             OnClickedOnGridPosition?.Invoke(this,
-                new OnClickedOnGridPositionEventArgs { Position = position, PlayerType = playerType });
+                new EventHandlers.OnClickedOnGridPositionEventArgs { Position = position, PlayerType = playerType });
             TriggerOnPlaceObjectEventRPC();
 
             if (WinConditions.CheckWinCondition(playerFiguresArray, out var line))
             {
-                OnGameWinEventArgs args = new OnGameWinEventArgs
+                EventHandlers.OnGameWinEventArgs args = new EventHandlers.OnGameWinEventArgs
                     { Line = line, WinPlayerType = currentPlayablePlayerType.Value };
                 isEnded = true;
                 IncreaseScore(currentPlayablePlayerType.Value);
@@ -233,7 +198,7 @@ namespace Managers
         }
 
         [Rpc(SendTo.ClientsAndHost)]
-        private void TriggerWinEventRPC(OnGameWinEventArgs args)
+        private void TriggerWinEventRPC(EventHandlers.OnGameWinEventArgs args)
         {
             OnGameWin?.Invoke(this, args);
         }
@@ -351,7 +316,6 @@ namespace Managers
 
         private IEnumerator WaitAndRematch()
         {
-            Debug.Log("Rematch");
             yield return new WaitForSeconds(timeBetweenGames);
             RematchRPC();
             yield break;

@@ -12,12 +12,6 @@ namespace UI
         [SerializeField] private Color winColor;
         [SerializeField] private Color loseColor;
         [SerializeField] private Color tieColor;
-        //[SerializeField] private Button rematchButton;
-
-        private void Awake()
-        {
-            //rematchButton.onClick.AddListener(() => GameManagerBase.Instance.RematchRPC());
-        }
 
         private void Start()
         {
@@ -39,7 +33,7 @@ namespace UI
             Hide();
         }
 
-        private void OnGameWin(object sender, GameManagerBase.OnGameWinEventArgs e)
+        private void OnGameWin(object sender, EventHandlers.OnGameWinEventArgs e)
         {
             if (e.WinPlayerType == GameManagerBase.Instance.GetLocalPlayerType())
             {

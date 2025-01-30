@@ -38,7 +38,7 @@ namespace Managers
             visualGameObjects.Clear();
         }
 
-        private void OnGameWin(object sender, GameManagerBase.OnGameWinEventArgs e)
+        private void OnGameWin(object sender, EventHandlers.OnGameWinEventArgs e)
         {
             if (!NetworkManager.Singleton.IsServer)
                 return;
@@ -62,7 +62,7 @@ namespace Managers
             };
         }
 
-        private void OnClickedOnGrid(object sender, GameManagerBase.OnClickedOnGridPositionEventArgs e)
+        private void OnClickedOnGrid(object sender, EventHandlers.OnClickedOnGridPositionEventArgs e)
         {
             Debug.Log("Spawn Object!");
             SpawnObjectRPC(e.Position, e.PlayerType);

@@ -1,6 +1,6 @@
 using System;
+using Managers;
 using UnityEngine;
-using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace LobbySystem
@@ -31,36 +31,34 @@ namespace LobbySystem
 
         private void Start()
         {
-            LobbySystem.LobbyManager.Instance.OnLobbyListChanged += RefreshList;
-            LobbySystem.LobbyManager.Instance.OnJoinedLobby += OnJoinedLobby;
-            LobbySystem.LobbyManager.Instance.OnLeftLobby += OnLeftLobby;
-            LobbySystem.LobbyManager.Instance.OnKickedFromLobby += OnKickedFromLobby;
+            LobbyManager.Instance.OnLobbyListChanged += OnRefreshList;
+            LobbyManager.Instance.OnJoinedLobby += OnJoinedLobby;
+            LobbyManager.Instance.OnLeftLobby += OnLeftLobby;
+            LobbyManager.Instance.OnKickedFromLobby += OnKickedFromLobby;
 
             Hide();
         }
 
         private void OnDestroy()
         {
-            LobbySystem.LobbyManager.Instance.OnLobbyListChanged -= RefreshList;
-            LobbySystem.LobbyManager.Instance.OnJoinedLobby -= OnJoinedLobby;
-            LobbySystem.LobbyManager.Instance.OnLeftLobby -= OnLeftLobby;
-            LobbySystem.LobbyManager.Instance.OnKickedFromLobby -= OnKickedFromLobby;
+            LobbyManager.Instance.OnLobbyListChanged -= OnRefreshList;
+            LobbyManager.Instance.OnJoinedLobby -= OnJoinedLobby;
+            LobbyManager.Instance.OnLeftLobby -= OnLeftLobby;
+            LobbyManager.Instance.OnKickedFromLobby -= OnKickedFromLobby;
         }
 
-        private void OnKickedFromLobby(object sender, LobbyManager.LobbyEventArgs e)
+        private void OnKickedFromLobby(object sender, EventHandlers.LobbyEventArgs e)
         {
             Hide();
-            //Show();
             // TODO: show message that you was kicked
         }
 
         private void OnLeftLobby(object sender, EventArgs e)
         {
             Hide();
-            //Show();
         }
 
-        private void OnJoinedLobby(object sender, LobbyManager.LobbyEventArgs e)
+        private void OnJoinedLobby(object sender, EventHandlers.LobbyEventArgs e)
         {
             Hide();
             LobbyUI.Instance.Show();
@@ -90,7 +88,12 @@ namespace LobbySystem
             LobbyManager.Instance.RefreshLobbyList();
         }
 
-        private void RefreshList(object sender, LobbySystem.LobbyManager.OnLobbyListChangedEventArgs e)
+        private void OnRefreshList(object sender, EventHandlers.OnLobbyListChangedEventArgs e)
+        {
+            RefreshLobbyList(e);
+        }
+
+        private void RefreshLobbyList(EventHandlers.OnLobbyListChangedEventArgs e)
         {
             Clear();
 

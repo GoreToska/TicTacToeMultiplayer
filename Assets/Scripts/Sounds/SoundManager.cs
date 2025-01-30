@@ -18,7 +18,7 @@ namespace Sounds
             GameManagerBase.Instance.OnGameWin += OnGameWin;
         }
 
-        private void OnGameWin(object sender, GameManagerBase.OnGameWinEventArgs e)
+        private void OnGameWin(object sender, EventHandlers.OnGameWinEventArgs e)
         {
             if (GameManagerBase.Instance.GetLocalPlayerType() == e.WinPlayerType)
             {

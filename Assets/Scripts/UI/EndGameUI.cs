@@ -36,12 +36,12 @@ public class EndGameUI : MonoBehaviour
         GameManagerBase.Instance.OnGameOver -= OnGameOver;
     }
 
-    private void OnGameOver(object sender, GameManagerBase.OnGameEnded e)
+    private void OnGameOver(object sender, EventHandlers.OnGameEnded e)
     {
         StartCoroutine(StartGameOverTimer(e));
     }
 
-    private IEnumerator StartGameOverTimer(GameManagerBase.OnGameEnded e)
+    private IEnumerator StartGameOverTimer(EventHandlers.OnGameEnded e)
     {
         yield return new WaitForSeconds(timeToWait);
 
