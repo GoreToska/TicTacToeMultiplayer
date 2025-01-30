@@ -352,6 +352,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: NetworkManager (1)
       objectReference: {fileID: 0}
+    - target: {fileID: 7686772945781145484, guid: a2b3ed71d621aa1418779dfcf8ad5451, type: 3}
+      propertyPath: NetworkConfig.TickRate
+      value: 50
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

@@ -193,13 +193,11 @@ namespace Managers
 
             if (WinConditions.CheckWinCondition(playerFiguresArray, out var line))
             {
-                // TODO: end screen, call rpc
                 OnGameWinEventArgs args = new OnGameWinEventArgs
                     { Line = line, WinPlayerType = currentPlayablePlayerType.Value };
                 isEnded = true;
                 IncreaseScore(currentPlayablePlayerType.Value);
                 TriggerWinEventRPC(args);
-                SwitchPlayablePlayerTypeRPC(playerType);
 
                 if (winnerPlayerSide == PlayerSide.None)
                     StartCoroutine(WaitAndRematch());
@@ -212,13 +210,14 @@ namespace Managers
                 TriggerTieEventRPC();
                 StartCoroutine(WaitAndRematch());
                 isEnded = true;
-                SwitchPlayablePlayerTypeRPC(playerType);
 
                 if (winnerPlayerSide == PlayerSide.None)
                     StartCoroutine(WaitAndRematch());
 
                 return;
             }
+
+            SwitchPlayablePlayerTypeRPC(playerType);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
@@ -352,6 +351,7 @@ namespace Managers
 
         private IEnumerator WaitAndRematch()
         {
+            Debug.Log("Rematch");
             yield return new WaitForSeconds(timeBetweenGames);
             RematchRPC();
             yield break;
