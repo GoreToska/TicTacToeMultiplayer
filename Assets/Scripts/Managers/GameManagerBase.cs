@@ -199,6 +199,10 @@ namespace Managers
                 isEnded = true;
                 IncreaseScore(currentPlayablePlayerType.Value);
                 TriggerWinEventRPC(args);
+                SwitchPlayablePlayerTypeRPC(playerType);
+
+                if (winnerPlayerSide == PlayerSide.None)
+                    StartCoroutine(WaitAndRematch());
 
                 return;
             }
@@ -206,12 +210,15 @@ namespace Managers
             if (WinConditions.CheckTieCondition(playerFiguresArray))
             {
                 TriggerTieEventRPC();
+                StartCoroutine(WaitAndRematch());
                 isEnded = true;
+                SwitchPlayablePlayerTypeRPC(playerType);
+
+                if (winnerPlayerSide == PlayerSide.None)
+                    StartCoroutine(WaitAndRematch());
 
                 return;
             }
-
-            SwitchPlayablePlayerTypeRPC(playerType);
         }
 
         [Rpc(SendTo.ClientsAndHost)]
@@ -258,9 +265,6 @@ namespace Managers
                 leftPlayerScore.Value += 1;
 
             CheckForEndOfGameRPC(winPlayer);
-
-            if (winnerPlayerSide == PlayerSide.None)
-                StartCoroutine(WaitAndRematch());
         }
 
         [Rpc(SendTo.Server)]

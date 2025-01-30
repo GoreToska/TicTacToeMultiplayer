@@ -116,9 +116,10 @@ public class ClientLoadingScreen : MonoBehaviour
         loadingScreenRunning = false;
 
         float currentTime = 0;
+        float pAlpha = canvasGroup.alpha;
         while (currentTime < fadeOutDuration)
         {
-            canvasGroup.alpha = Mathf.Lerp(1, 0, currentTime / fadeOutDuration);
+            canvasGroup.alpha = Mathf.Lerp(pAlpha, 0, currentTime / fadeOutDuration);
             yield return null;
             currentTime += Time.deltaTime;
         }

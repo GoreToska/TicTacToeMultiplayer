@@ -8,14 +8,11 @@ using Unity.Netcode.Transports.UTP;
 using Unity.Networking.Transport.Relay;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
+using UnityEngine;
 using Unity.Services.Lobbies;
 using Unity.Services.Lobbies.Models;
 using Unity.Services.Relay;
 using Unity.Services.Relay.Models;
-using Unity.VisualScripting;
-using UnityEngine;
-using UnityEngine.SceneManagement;
-using Random = UnityEngine.Random;
 
 namespace LobbySystem
 {
@@ -35,6 +32,7 @@ namespace LobbySystem
         public const string StartedGameName = "KeyStartedGame";
 
         private Allocation relayAllocation = null;
+        private string relayCode;
         private bool isStartedGame = false;
 
         private Coroutine pollCoroutine = null;
@@ -117,7 +115,7 @@ namespace LobbySystem
                         field: QueryOrder.FieldOptions.Created)
                 };
 
-                QueryResponse lobbyListQueryResponse = await Lobbies.Instance.QueryLobbiesAsync(options);
+                QueryResponse lobbyListQueryResponse = await LobbyService.Instance.QueryLobbiesAsync(options);
 
                 OnLobbyListChanged?.Invoke(this,
                     new OnLobbyListChangedEventArgs { lobbyList = lobbyListQueryResponse.Results });
@@ -134,12 +132,16 @@ namespace LobbySystem
 
             try
             {
-                relayAllocation = await AllocateRelay(maxPlayers);
-                string relayJoinCode = await GetRelayJoinCode(relayAllocation);
                 this.maxPlayers = maxPlayers;
-                NetworkManager.Singleton.GetComponent<UnityTransport>()
-                    .SetRelayServerData(new RelayServerData(relayAllocation, "dtls"));
-
+                string connectionType = "dtls";
+                List<Region> regions = await RelayService.Instance.ListRegionsAsync();
+                string region = regions[0].Id;
+                relayAllocation = await RelayService.Instance.CreateAllocationAsync(maxPlayers, region);
+                var relayServerData = relayAllocation.ToRelayServerData(connectionType);
+                NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
+                string joinCode = await RelayService.Instance.GetJoinCodeAsync(relayAllocation.AllocationId);
+                NetworkManager.Singleton.StartHost();
+                Debug.Log($"Relay join code on host - {joinCode}");
                 CreateLobbyOptions options = new CreateLobbyOptions
                 {
                     IsPrivate = false,
@@ -147,7 +149,7 @@ namespace LobbySystem
                     Data = new Dictionary<string, DataObject>
                     {
                         { StartedGameName, new DataObject(DataObject.VisibilityOptions.Member, "false") },
-                        { RelayJoinCodeName, new DataObject(DataObject.VisibilityOptions.Member, relayJoinCode) }
+                        { RelayJoinCodeName, new DataObject(DataObject.VisibilityOptions.Member, joinCode) }
                     }
                 };
 
@@ -224,7 +226,7 @@ namespace LobbySystem
                     }
                 };
 
-                QueryResponse response = await Lobbies.Instance.QueryLobbiesAsync(options);
+                QueryResponse response = await LobbyService.Instance.QueryLobbiesAsync(options);
                 Debug.Log("Lobbies found - " + response.Results.Count);
 
                 foreach (var lobby in response.Results)
@@ -261,7 +263,7 @@ namespace LobbySystem
             try
             {
                 JoinLobbyByCodeOptions options = new JoinLobbyByCodeOptions { Player = CreatePlayer() };
-                joinedLobby = await Lobbies.Instance.JoinLobbyByCodeAsync(lobbyCode, options);
+                joinedLobby = await LobbyService.Instance.JoinLobbyByCodeAsync(lobbyCode, options);
                 pollCoroutine = StartCoroutine(LobbyPollForUpdates());
                 OnJoinedLobby?.Invoke(this, new LobbyEventArgs { Lobby = joinedLobby });
             }
@@ -277,7 +279,7 @@ namespace LobbySystem
             try
             {
                 JoinLobbyByIdOptions options = new JoinLobbyByIdOptions { Player = CreatePlayer() };
-                joinedLobby = await Lobbies.Instance.JoinLobbyByIdAsync(lobbyID, options);
+                joinedLobby = await LobbyService.Instance.JoinLobbyByIdAsync(lobbyID, options);
                 pollCoroutine = StartCoroutine(LobbyPollForUpdates());
                 OnJoinedLobby?.Invoke(this, new LobbyEventArgs { Lobby = joinedLobby });
             }
@@ -370,7 +372,7 @@ namespace LobbySystem
                 if (!IsLobbyHost())
                     return;
 
-                hostLobby = await Lobbies.Instance.UpdateLobbyAsync(hostLobby.Id, new UpdateLobbyOptions
+                hostLobby = await LobbyService.Instance.UpdateLobbyAsync(hostLobby.Id, new UpdateLobbyOptions
                 {
                     HostId = hostLobby.Players[playerId].Id,
                 });
@@ -440,7 +442,7 @@ namespace LobbySystem
             try
             {
                 Debug.Log("Host game method");
-                hostLobby = await Lobbies.Instance.UpdateLobbyAsync(hostLobby.Id, new UpdateLobbyOptions
+                hostLobby = await LobbyService.Instance.UpdateLobbyAsync(hostLobby.Id, new UpdateLobbyOptions
                 {
                     Data = new Dictionary<string, DataObject>
                     {
@@ -463,7 +465,6 @@ namespace LobbySystem
         {
             try
             {
-                Debug.Log("Starting game on each client!");
                 if (joinedLobby.Players.Count < minPlayersToStart)
                 {
                     Debug.LogWarning("Not enough players!");
@@ -472,15 +473,17 @@ namespace LobbySystem
 
                 if (joinedLobby.HostId == AuthenticationService.Instance.PlayerId)
                 {
-                    var result = NetworkManager.Singleton.StartHost();
-                    Debug.Log(result);
+                    //var result = NetworkManager.Singleton.StartHost();
+                    //Debug.Log(result);
                 }
                 else
                 {
-                    string relayJoinCode = joinedLobby.Data[RelayJoinCodeName].Value;
-                    JoinAllocation joinAllocation = await JoinRelay(relayJoinCode);
+                    string connectionType = "dtls";
+                    Debug.Log(relayCode);
+                    var joinAllocation = await RelayService.Instance.JoinAllocationAsync(relayCode);
+                    var relayServerData = AllocationUtils.ToRelayServerData(joinAllocation, connectionType);
                     NetworkManager.Singleton.GetComponent<UnityTransport>()
-                        .SetRelayServerData(new RelayServerData(joinAllocation, "dtls"));
+                        .SetRelayServerData(relayServerData);
                     var result = NetworkManager.Singleton.StartClient();
                     Debug.Log(result);
                 }
@@ -518,12 +521,15 @@ namespace LobbySystem
                 }
 
                 joinedLobby = task.Result;
+                relayCode = joinedLobby.Data[RelayJoinCodeName].Value;
+                Debug.Log($"Relay join code is {relayCode}");
                 OnCurrentLobbyUpdate?.Invoke(this, new LobbyEventArgs { Lobby = joinedLobby });
 
                 Debug.Log($"Checking game for start - {joinedLobby.Data[StartedGameName].Value}");
 
                 if (joinedLobby.Data[StartedGameName].Value == "true")
                 {
+                    relayCode = joinedLobby.Data[RelayJoinCodeName].Value;
                     OnLobbyStartGame?.Invoke(this, new LobbyEventArgs { Lobby = joinedLobby });
                     Debug.Log("Break!!!!!!!");
                     yield break;
