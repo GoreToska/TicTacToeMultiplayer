@@ -33,8 +33,7 @@ namespace LobbySystem
 
         private void TryToStartGame()
         {
-            Debug.LogWarning("Try to start");
-            LobbyManager.Instance.HostStartGame();
+            LobbyManager.Instance.StartGameOnHost();
         }
 
         private void Start()
@@ -88,16 +87,13 @@ namespace LobbySystem
             {
                 Transform playerSingleTransform = Instantiate(playerLobbyMemberPrefab, playersContainer);
                 LobbyMemberUI lobbyMemberUI = playerSingleTransform.GetComponent<LobbyMemberUI>();
-                bool isNotHostAndNotSelf = LobbyManager.Instance.IsLobbyHost() &&
-                                           player.Id != AuthenticationService.Instance.PlayerId;
-                lobbyMemberUI.SetKickButtonVisible(isNotHostAndNotSelf);
-                lobbyMemberUI.SetMemberData(player);
+                SetKickButtonVisibility(player, lobbyMemberUI);
             }
 
             lobbyNameText.text = lobby.Name;
             playerCountText.text = lobby.Players.Count + " / " + lobby.MaxPlayers;
 
-            if (!LobbyManager.Instance.IsLobbyHost())
+            if (!LobbyUtilities.IsLobbyHost(LobbyManager.Instance.GetJoinedLobby()))
             {
                 startGameButton.gameObject.SetActive(false);
             }
@@ -109,6 +105,14 @@ namespace LobbySystem
             }
 
             Show();
+        }
+
+        private static void SetKickButtonVisibility(Player player, LobbyMemberUI lobbyMemberUI)
+        {
+            bool isNotHostAndNotSelf = LobbyUtilities.IsLobbyHost(LobbyManager.Instance.GetJoinedLobby()) &&
+                                       player.Id != AuthenticationService.Instance.PlayerId;
+            lobbyMemberUI.SetKickButtonVisible(isNotHostAndNotSelf);
+            lobbyMemberUI.SetMemberData(player);
         }
 
         private void ClearLobbyUI()

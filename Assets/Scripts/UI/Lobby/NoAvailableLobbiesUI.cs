@@ -7,9 +7,7 @@ using UnityEngine;
 public class NoAvailableLobbiesUI : MonoBehaviour
 {
     [HideInInspector] public static NoAvailableLobbiesUI Instance { get; private set; }
-
-    [SerializeField] private string ShowTrigger = "Show";
-
+    
     private Animator animator;
 
     private void Awake()
