@@ -4,23 +4,9 @@ using GameRules;
 using Unity.Netcode;
 using UnityEngine;
 
-public enum PlayerType
-{
-    None = 0,
-    Cross = 1,
-    Circle = 2,
-}
-
-public enum PlayerSide
-{
-    None = 0,
-    Left = 1,
-    Right = 2,
-}
-
 namespace Managers
 {
-    public partial class GameManagerBase : NetworkBehaviour
+    public class GameManagerBase : NetworkBehaviour
     {
         public static GameManagerBase Instance { get; private set; }
 
@@ -161,6 +147,7 @@ namespace Managers
                 EventHandlers.OnGameWinEventArgs args = new EventHandlers.OnGameWinEventArgs
                     { Line = line, WinPlayerType = currentPlayablePlayerType.Value };
                 isEnded = true;
+                
                 IncreaseScore(currentPlayablePlayerType.Value);
                 TriggerWinEventRPC(args);
 
@@ -173,7 +160,6 @@ namespace Managers
             if (WinConditions.CheckTieCondition(playerFiguresArray))
             {
                 TriggerTieEventRPC();
-                StartCoroutine(WaitAndRematch());
                 isEnded = true;
 
                 if (winnerPlayerSide == PlayerSide.None)
@@ -239,6 +225,7 @@ namespace Managers
                 winnerPlayerSide = PlayerSide.Right;
                 winnerPlayerType = winPlayer;
                 TriggerGameOverRPC(PlayerSide.Right);
+                
                 return;
             }
 
@@ -247,6 +234,7 @@ namespace Managers
                 winnerPlayerSide = PlayerSide.Left;
                 winnerPlayerType = winPlayer;
                 TriggerGameOverRPC(PlayerSide.Left);
+                
                 return;
             }
         }
@@ -318,6 +306,7 @@ namespace Managers
         {
             yield return new WaitForSeconds(timeBetweenGames);
             RematchRPC();
+            
             yield break;
         }
     }

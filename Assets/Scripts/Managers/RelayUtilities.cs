@@ -20,23 +20,25 @@ namespace LobbySystem
 
         public static async Task<Allocation> CreateRelayAllocation(int maxPlayers)
         {
-            string connectionType = "wss";
-            //string connectionType = "dtls";
             Allocation relayAllocation = await RelayService.Instance.CreateAllocationAsync(maxPlayers);
-            var relayServerData = relayAllocation.ToRelayServerData(connectionType);
+            var relayServerData = relayAllocation.ToRelayServerData(GetConnectionType());
             NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
+
             return relayAllocation;
         }
 
         public static async Task StartClientRelay(Lobby joinedLobby)
         {
-            string connectionType = "wss";
-            //string connectionType = "dtls";
             JoinAllocation joinAllocation =
                 await RelayService.Instance.JoinAllocationAsync(LobbyUtilities.GetLobbyRelayCode(joinedLobby));
-            RelayServerData relayServerData = AllocationUtils.ToRelayServerData(joinAllocation, connectionType);
+            RelayServerData relayServerData = joinAllocation.ToRelayServerData(GetConnectionType());
             NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
             NetworkManager.Singleton.StartClient();
+        }
+
+        public static string GetConnectionType()
+        {
+            return NetworkManager.Singleton.GetComponent<UnityTransport>().UseWebSockets ? "wss" : "dtls";
         }
     }
 }

@@ -354,7 +354,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6491305023820553674, guid: a2b3ed71d621aa1418779dfcf8ad5451, type: 3}
       propertyPath: m_UseWebSockets
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7686772945781145484, guid: a2b3ed71d621aa1418779dfcf8ad5451, type: 3}
       propertyPath: NetworkConfig.TickRate
