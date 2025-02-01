@@ -33,15 +33,13 @@ namespace LobbySystem
         private Coroutine pollCoroutine = null;
         private Coroutine heartbeatCoroutine = null;
         private Coroutine refreshCoroutine = null;
-
-        //private Lobby hostLobby;
         private Lobby joinedLobby;
 
         private string relayCode;
         private float heartbeatFrequency = 10;
         private string playerName;
         private int minPlayersToStart = 2;
-        //private Allocation allocation;
+        private bool startedRelay = false;
 
         private void Awake()
         {
@@ -91,6 +89,7 @@ namespace LobbySystem
 
             try
             {
+                startedRelay = true;
                 Allocation allocation = await RelayUtilities.CreateRelayAllocation(maxPlayers);
                 var joinCode = await RelayUtilities.GetRelayJoinCode(allocation.AllocationId);
                 NetworkManager.Singleton.StartHost();
@@ -126,7 +125,6 @@ namespace LobbySystem
         {
             try
             {
-                Debug.Log("Quick!");
                 QuickJoinLobbyOptions options = new QuickJoinLobbyOptions
                     { Player = LobbyUtilities.CreatePlayer(playerName) };
                 joinedLobby = await LobbyService.Instance.QuickJoinLobbyAsync(options);
@@ -181,6 +179,7 @@ namespace LobbySystem
         {
             try
             {
+                startedRelay = false;
                 await LobbyService.Instance.RemovePlayerAsync(joinedLobby.Id, AuthenticationService.Instance.PlayerId);
 
                 if (NetworkManager.Singleton.IsHost)
@@ -226,7 +225,13 @@ namespace LobbySystem
         {
             try
             {
-                Debug.Log("Start!");
+                if (LobbyUtilities.IsLobbyHost(joinedLobby) &&
+                    LobbyUtilities.EnoughPlayers(joinedLobby, minPlayersToStart))
+                {
+                    Debug.LogWarning("Not enough players!");
+                    return;
+                }
+
                 var startGameParam = LobbyUtilities.GetStartedGameParam("true");
 
                 joinedLobby = await LobbyService.Instance.UpdateLobbyAsync(joinedLobby.Id, new UpdateLobbyOptions
@@ -252,21 +257,12 @@ namespace LobbySystem
         {
             try
             {
-                Debug.Log("Starting!");
-                if (LobbyUtilities.IsLobbyHost(joinedLobby) &&
-                    LobbyUtilities.EnoughPlayers(joinedLobby, minPlayersToStart))
-                {
-                    Debug.LogWarning("Not enough players!");
-                    return;
-                }
-
                 if (!LobbyUtilities.IsLobbyHost(joinedLobby))
                 {
                     StopCoroutine(refreshCoroutine);
                     await RelayUtilities.StartClientRelay(joinedLobby);
                 }
 
-                Debug.Log("Loading!");
                 MultiplayerSceneManager.Instance.LoadScene("GameScene", true);
             }
             catch (LobbyServiceException e)
@@ -301,19 +297,28 @@ namespace LobbySystem
 
         private async void CreateNewLobbyHost(Lobby lobby)
         {
-            Allocation allocation = await RelayUtilities.CreateRelayAllocation(lobby.MaxPlayers);
-            var joinCode = await RelayUtilities.GetRelayJoinCode(allocation.AllocationId);
-            var newCodeAllocation = LobbyUtilities.GetRelayJoinCodeParam(joinCode);
-            Debug.Log(newCodeAllocation);
-            joinedLobby = await LobbyService.Instance.UpdateLobbyAsync(joinedLobby.Id, new UpdateLobbyOptions
+            try
             {
-                Data = new Dictionary<string, DataObject>
-                {
-                    { newCodeAllocation.Item1, newCodeAllocation.Item2 }
-                }
-            });
+                startedRelay = true;
+                Allocation allocation = await RelayUtilities.CreateRelayAllocation(lobby.MaxPlayers);
+                var joinCode = await RelayUtilities.GetRelayJoinCode(allocation.AllocationId);
+                var newCodeAllocation = LobbyUtilities.GetRelayJoinCodeParam(joinCode);
 
-            NetworkManager.Singleton.StartHost();
+                joinedLobby = await LobbyService.Instance.UpdateLobbyAsync(joinedLobby.Id, new UpdateLobbyOptions
+                {
+                    Data = new Dictionary<string, DataObject>
+                    {
+                        { newCodeAllocation.Item1, newCodeAllocation.Item2 }
+                    }
+                });
+
+                NetworkManager.Singleton.StartHost();
+            }
+            catch (RelayServiceException e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         private IEnumerator LobbyPollForUpdates()
@@ -329,20 +334,19 @@ namespace LobbySystem
                 {
                     OnKickedFromLobby?.Invoke(this, new EventHandlers.LobbyEventArgs { Lobby = joinedLobby });
                     joinedLobby = null;
-                    Debug.LogError("Something went wrong!");
                     yield break;
                 }
 
                 // If previous lobby host disconnected we should become new host  
-                if (LobbyUtilities.IsLobbyHost(joinedLobby) && !NetworkManager.Singleton.IsHost)
+                if (LobbyUtilities.IsLobbyHost(joinedLobby) && !NetworkManager.Singleton.IsHost && !startedRelay)
                 {
-                    CreateNewLobbyHost(joinedLobby);
                     heartbeatCoroutine ??= StartCoroutine(PerformHeartBeat());
+                    CreateNewLobbyHost(joinedLobby);
                 }
 
                 relayCode = LobbyUtilities.GetLobbyRelayCode(joinedLobby);
                 OnCurrentLobbyUpdate?.Invoke(this, new EventHandlers.LobbyEventArgs { Lobby = joinedLobby });
-                Debug.Log(relayCode);
+
                 if (LobbyUtilities.StartedGame(joinedLobby))
                 {
                     relayCode = LobbyUtilities.GetLobbyRelayCode(joinedLobby);

@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 2088142503386187193}
   - component: {fileID: 1000383011318498550}
   - component: {fileID: 2620863159753696087}
+  - component: {fileID: 2149036769462130719}
   m_Layer: 5
   m_Name: Join
   m_TagString: Untagged
@@ -120,6 +121,19 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2149036769462130719
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4396542768077449983}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55f7f693e036b28468d496731228c6c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  buttonSoundPrefab: {fileID: 1535791808222809317, guid: 31b62a80f04a5cf469dc2ad9a12b8c73, type: 3}
 --- !u!1 &4829646892831984398
 GameObject:
   m_ObjectHideFlags: 0

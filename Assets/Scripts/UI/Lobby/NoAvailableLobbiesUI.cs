@@ -3,26 +3,28 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 
-[RequireComponent(typeof(Animator))]
-public class NoAvailableLobbiesUI : MonoBehaviour
+namespace LobbySystem
 {
-    [HideInInspector] public static NoAvailableLobbiesUI Instance { get; private set; }
-    
-    private Animator animator;
-
-    private void Awake()
+    [RequireComponent(typeof(Animator))]
+    public class NoAvailableLobbiesUI : MonoBehaviour
     {
-        if (Instance == null)
-            Instance = this;
-        else
-            Destroy(gameObject);
+        [HideInInspector] public static NoAvailableLobbiesUI Instance { get; private set; }
 
-        animator = GetComponent<Animator>();
-    }
+        private Animator animator;
 
-    public void Show()
-    {
-        animator.Play("LobbyAssert");
-        //animator.ResetTrigger(ShowTrigger);
+        private void Awake()
+        {
+            if (Instance == null)
+                Instance = this;
+            else
+                Destroy(gameObject);
+
+            animator = GetComponent<Animator>();
+        }
+
+        public void Show()
+        {
+            animator.Play("LobbyAssert");
+        }
     }
 }
