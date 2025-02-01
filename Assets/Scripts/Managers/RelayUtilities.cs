@@ -20,7 +20,8 @@ namespace LobbySystem
 
         public static async Task<Allocation> CreateRelayAllocation(int maxPlayers)
         {
-            string connectionType = "dtls";
+            string connectionType = "wss";
+            //string connectionType = "dtls";
             Allocation relayAllocation = await RelayService.Instance.CreateAllocationAsync(maxPlayers);
             var relayServerData = relayAllocation.ToRelayServerData(connectionType);
             NetworkManager.Singleton.GetComponent<UnityTransport>().SetRelayServerData(relayServerData);
@@ -29,8 +30,8 @@ namespace LobbySystem
 
         public static async Task StartClientRelay(Lobby joinedLobby)
         {
-            Debug.Log(LobbyUtilities.GetLobbyRelayCode(joinedLobby));
-            string connectionType = "dtls";
+            string connectionType = "wss";
+            //string connectionType = "dtls";
             JoinAllocation joinAllocation =
                 await RelayService.Instance.JoinAllocationAsync(LobbyUtilities.GetLobbyRelayCode(joinedLobby));
             RelayServerData relayServerData = AllocationUtils.ToRelayServerData(joinAllocation, connectionType);
